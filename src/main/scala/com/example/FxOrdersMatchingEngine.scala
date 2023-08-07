@@ -8,7 +8,7 @@ import org.apache.spark.sql.types._
 object FxOrdersMatchingEngine extends App{
 
   // creating spark variable
-  val spark = SparkSession.builder().appName("FXMatchingEngine").getOrCreate()
+  val spark = SparkSession.builder().appName("FXOrdersMatchingEngine").getOrCreate()
 
   // creating schema to read orders from csv file
   val ordersSchema = StructType(
