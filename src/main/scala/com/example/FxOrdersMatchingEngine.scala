@@ -23,7 +23,7 @@ object FxOrdersMatchingEngine extends App{
   )
 
   // get the resource file path
-  val resourcePath = getClass.getResource("exampleOrders.csv")
+  val resourcePath = getClass.getResource(s"/exampleOrders.csv")
   val filePath = resourcePath.getPath
 
   // read the exampleOrders.csv file and create ordersDF dataframe
@@ -35,9 +35,9 @@ object FxOrdersMatchingEngine extends App{
 
   // join BUY and SELL orders on quantity and find the best price
   val matchedOrdersDF = buyOrdersDF.as("buy")
-    .join(sellOrdersDF.as("sell"),Seq("quantity"))
-    .where(col("buy.price") === min(col("buy.price")).over(Window.partitionBy("buy.quantity")))
-    .where(col("sell.price") === max(col("sell.price")).over(Window.partitionBy("sell.quantity")))
+    .join(sellOrdersDF.as("sell"),col("buy.quantity") === col("sell.quantity"),"inner")
+    .withColumn("row_number",row_number().over(Window.partitionBy("buy.price").orderBy("buy.orderTime")))
+    .filter(col("row_number") === 1 && col("buy.price")>=col("sell.price"))
     .select(
       col("buy.orderId").alias("buy_orderId"),
       col("buy.userName").alias("buy_userName"),
@@ -51,5 +51,5 @@ object FxOrdersMatchingEngine extends App{
       col("sell.price").alias("sell_price")
     )
 
-
+  matchedOrdersDF.show(false)
 }
