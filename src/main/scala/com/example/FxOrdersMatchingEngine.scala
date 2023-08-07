@@ -1,55 +1,50 @@
 package com.example
 
-import org.apache.spark.sql.expressions.Window
-import org.apache.spark.sql.{DataFrame, SparkSession}
+import org.apache.spark.sql.SparkSession
 import org.apache.spark.sql.functions._
 import org.apache.spark.sql.types._
 
-object FxOrdersMatchingEngine extends App{
+object FxOrdersMatchingEngine {
 
-  // creating spark variable
-  val spark = SparkSession.builder().appName("FXOrdersMatchingEngine").getOrCreate()
+  def main(args : Array[String]): Unit = {
 
-  // creating schema to read orders from csv file
-  val ordersSchema = StructType(
-    Array(
-      StructField("orderId",StringType,false),
-      StructField("userName",StringType,false),
-      StructField("orderTime",LongType,false),
-      StructField("orderType",StringType,false),
-      StructField("quantity",DoubleType,false),
-      StructField("price",DoubleType,false)
-    )
-  )
+    // creating spark variable
+    val spark = SparkSession.builder().master("local[*]").appName("FXOrdersMatchingEngine").getOrCreate()
 
-  // get the resource file path
-  val resourcePath = getClass.getResource(s"/exampleOrders.csv")
-  val filePath = resourcePath.getPath
+    import spark.implicits
 
-  // read the exampleOrders.csv file and create ordersDF dataframe
-  val ordersDF = spark.read.option("header","false").schema(ordersSchema).csv(filePath)
-
-  // separate BUY and SELL orders
-  val buyOrdersDF = ordersDF.filter(col("orderType") === "BUY")
-  val sellOrdersDF = ordersDF.filter(col("orderType") === "SELL")
-
-  // join BUY and SELL orders on quantity and find the best price
-  val matchedOrdersDF = buyOrdersDF.as("buy")
-    .join(sellOrdersDF.as("sell"),col("buy.quantity") === col("sell.quantity"),"inner")
-    .withColumn("row_number",row_number().over(Window.partitionBy("buy.price").orderBy("buy.orderTime")))
-    .filter(col("row_number") === 1 && col("buy.price")>=col("sell.price"))
-    .select(
-      col("buy.orderId").alias("buy_orderId"),
-      col("buy.userName").alias("buy_userName"),
-      col("buy.orderTime").alias("buy_orderTime"),
-      col("buy.quantity").alias("buy_quantity"),
-      col("buy.price").alias("buy_price"),
-      col("sell.orderId").alias("sell_orderId"),
-      col("sell.userName").alias("sell_userName"),
-      col("sell.orderTime").alias("sell_orderTime"),
-      col("sell.quantity").alias("sell_quantity"),
-      col("sell.price").alias("sell_price")
+    // creating schema to read orders from csv file
+    val ordersSchema = StructType(
+      Array(
+        StructField("orderId", StringType, false),
+        StructField("userName", StringType, false),
+        StructField("orderTime", LongType, false),
+        StructField("orderType", StringType, false),
+        StructField("quantity", DoubleType, false),
+        StructField("price", DoubleType, false)
+      )
     )
 
-  matchedOrdersDF.show(false)
+    // get the resource file path
+    val resourcePath = getClass.getResource(s"/exampleOrders.csv")
+    val filePath = resourcePath.getPath
+
+    // read the exampleOrders.csv file and create ordersDF dataframe
+    val ordersDF = spark.read.option("header", "false").schema(ordersSchema).csv(filePath)
+
+    // separate BUY and SELL orders
+    val buyOrdersDF = ordersDF.filter(col("orderType") === "BUY")
+    val sellOrdersDF = ordersDF.filter(col("orderType") === "SELL")
+
+    val orderEncoder = org.apache.spark.sql.Encoders.product[Order]
+
+    val buyOrders = buyOrdersDF.as[Order](orderEncoder)
+    val sellOrders = sellOrdersDF.as[Order](orderEncoder)
+
+    // orders matching based on quantity and best price and first come basis
+    val matchedOrders = buyOrders.joinWith(sellOrders,buyOrders("quantity") === sellOrders("quantity"),"inner")
+
+
+  }
+
 }
