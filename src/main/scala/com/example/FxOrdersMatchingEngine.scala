@@ -7,7 +7,7 @@ import org.apache.spark.sql.types._
 
 object FxOrdersMatchingEngine extends App{
 
-  // creating spark variable
+  // creating spark variable, make sure to add master if you are running the application locally
   val spark = SparkSession.builder().appName("FXOrdersMatchingEngine").getOrCreate()
 
   // creating schema to read orders from csv file
@@ -51,5 +51,6 @@ object FxOrdersMatchingEngine extends App{
       col("sell.price").alias("sell_price")
     )
 
-  matchedOrdersDF.show(false)
+  // write matched orders to a output csv file, make sure to change the path to desired location
+  matchedOrdersDF.repartition(1).write.mode("overwrite").csv("path")
 }

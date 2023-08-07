@@ -1,35 +1,31 @@
-###### Refinitiv Matching Engine Exercise
+clone the project from command terminal using git clone command Ex: git clone https://github.com/ranganathMulinti/ForeignExchange.git
+or from IntelliJ go to File -> New -> project From Version Control and paste the https or ssh git link
 
-Your task is to create a new matching engine for FX orders. The engine will take a CSV file of orders for a given
-currency pair and match orders together. In this example you'll be looking at USD/GBP.
+make sure to install java 1.8 and select in File -> Project Structure -> project -> SDK
+install scala plugin from File -> Settings -> plugins
 
-There are two types of orders, BUY and SELL orders. A BUY order is for the price in USD you'll pay for GBP, SELL
-order is the price in USD you'll sell GBP for.
+make sure the project is recognized as maven project, if not right-click on the pom.xml file and select the option Add as maven file
 
-Each order has the following fields:
-1. Order ID
-   - This is a unique ID in the file which is used to track an order
-2. User Name
-   - This is the username of the user making the order
-3. Order Time
-   - This is the time, in milliseconds since Jan 1st 1970, the order was placed
-4. Order Type
-   - Either BUY or SELL
-5. Quantity
-   - The number of currency units you want to BUY or SELL
-6. Price
-   - The price you wish to sell for, this is in the lowest unit of the currency, i.e. for GBP it's in pence and for USD it's cents
+to build jar, run "mvn clean install" command on your terminal, this will create fx-order-matching-engine-1.0-SNAPSHOT-jar-with-dependencies.jar
 
-The matching engine must do the following:
-- It should match orders when they have the same quantity
-- If an order is matched it should be closed
-- If an order is not matched it should be kept on an "order book" and wait for an order which does match
-- When matching an order to the book the order should look for the best price
-- The best price for a BUY is the lowest possible price to BUY for
-- The best price for a SELL is the highest possible price to SELL for
-- You should always use the price from the "order book" when matching orders
-- When an order has matched you should record the IDs of both orders, the price, quantity and time of the match
-- If two orders match with the same price the first order is used
-- Orders won't have the same timestamp
+FxOrdersMatchingEngine is the main application where we read data from csv file, create buy orders and sell orders dataframe and find out the matching orders
 
-The file exampleOrders.csv is some example trading data, the matches for that trading data is in outputExampleMatches.csv
+In order to run FxOrdersMatchingEngine in your local, you can directly navigate to FxOrdersMatchingEngine object and click on run icon
+
+Below is the spark-submit command to run the job in cluster, here I am assuming yarn cluster
+spark-submit \
+--class com.example.FxOrdersMatchingEngine \
+--name "Foreign Exchange Order Matching Engine" \
+--master yarn \
+--num-executors 2 \
+--driver-memory 2G \
+--executor-memory 2G \
+--executor-cores 4 \
+<path-to-jar>/fx-order-matching-engine-1.0-SNAPSHOT-jar-with-dependencies.jar
+
+in the above spark-submit command, fx-order-matching-engine-1.0-SNAPSHOT-jar-with-dependencies.jar contains all the dependency jars, so no need to externally specify the jars
+if the dependency jars are not included then we need to specify the jars using --jars options
+if we need to pass any input arguments to the application, we can pass the arguments at the end with space separated
+
+num-executor, executor-memory and executor-cores can be decided based on the amount of data the application is handling
+or we can set spark dynamic allocation to true, to let spark decide
