@@ -13,6 +13,7 @@ FxOrdersMatchingEngine is the main application where we read data from csv file,
 In order to run FxOrdersMatchingEngine in your local, you can directly navigate to FxOrdersMatchingEngine object and click on run icon
 
 Below is the spark-submit command to run the job in cluster, here I am assuming yarn cluster
+
 spark-submit \
 --class com.example.FxOrdersMatchingEngine \
 --name "Foreign Exchange Order Matching Engine" \
